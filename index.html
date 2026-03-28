@@ -48,6 +48,31 @@
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
 
+        .main-nav {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .nav-link {
+            padding: 0.5rem 1rem;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+        }
+
+        .nav-link.active {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
         .logo {
             font-size: 1.5rem;
             font-weight: 700;
@@ -283,6 +308,11 @@
             background: var(--gray-50);
             border-radius: 12px;
             padding: 1rem;
+            transition: all 0.2s;
+        }
+
+        .column-content {
+            min-height: 100px;
         }
 
         .column-header {
@@ -328,9 +358,23 @@
             padding: 1rem;
             margin-bottom: 0.75rem;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-            cursor: pointer;
+            cursor: grab;
             transition: all 0.2s;
             border-left: 4px solid var(--gray-300);
+        }
+
+        .patient-card:active {
+            cursor: grabbing;
+        }
+
+        .patient-card.dragging {
+            opacity: 0.5;
+            transform: rotate(3deg);
+        }
+
+        .pipeline-column.drag-over {
+            background: #e0f2fe;
+            border: 2px dashed var(--primary);
         }
 
         .patient-card:hover {
@@ -779,6 +823,12 @@
             <div class="logo-icon">B</div>
             <span>BucoMax</span>
         </div>
+        <nav class="main-nav">
+            <a href="index.html" class="nav-link active">📊 Dashboard</a>
+            <a href="pacientes.html" class="nav-link">👥 Pacientes</a>
+            <a href="relatorios.html" class="nav-link">📈 Relatórios</a>
+            <a href="configuracoes.html" class="nav-link">⚙️ Configurações</a>
+        </nav>
         <div class="user-info">
             <span>Dr. João Silva</span>
             <div class="user-avatar">👤</div>
@@ -857,10 +907,10 @@
             <button class="btn btn-primary" onclick="openNewPatientModal()">
                 ➕ Novo Paciente
             </button>
-            <button class="btn btn-outline">
+            <a href="relatorios.html" class="btn btn-outline">
                 📊 Relatórios
-            </button>
-            <button class="btn btn-outline">
+            </a>
+            <button class="btn btn-outline" onclick="exportData()">
                 📤 Exportar
             </button>
         </div>
@@ -868,21 +918,22 @@
         <!-- Filters -->
         <div class="filters-section">
             <div class="search-box">
-                <input type="text" placeholder="Buscar paciente por nome ou telefone...">
+                <input type="text" id="searchInput" placeholder="Buscar paciente por nome ou telefone..."
+                    oninput="filterPatients()">
             </div>
             <div class="filter-group">
                 <label>Fluxo:</label>
-                <select>
+                <select id="filterFlow" onchange="filterPatients()">
                     <option value="">Todos os fluxos</option>
-                    <option value="completo">Completo (Orto+Cirurgia)</option>
-                    <option value="direto">Direto para Cirurgia</option>
-                    <option value="convenio">Via Convênio</option>
-                    <option value="judicial">Via Judicial</option>
+                    <option value="Completo">Completo (Orto+Cirurgia)</option>
+                    <option value="Direto">Direto para Cirurgia</option>
+                    <option value="Convênio">Via Convênio</option>
+                    <option value="Judicial">Via Judicial</option>
                 </select>
             </div>
             <div class="filter-group">
                 <label>Status:</label>
-                <select>
+                <select id="filterStatus" onchange="filterPatients()">
                     <option value="">Todos</option>
                     <option value="ok">Em dia</option>
                     <option value="warning">Atenção</option>
@@ -891,12 +942,12 @@
             </div>
             <div class="filter-group">
                 <label>OPME:</label>
-                <select>
+                <select id="filterOPME" onchange="filterPatients()">
                     <option value="">Todos</option>
-                    <option value="artfix">Art Fix</option>
-                    <option value="evolve">Evolve</option>
-                    <option value="cpmh">CPMH</option>
-                    <option value="patrocinado">Patrocinado</option>
+                    <option value="Art Fix">Art Fix</option>
+                    <option value="Evolve">Evolve</option>
+                    <option value="CPMH">CPMH</option>
+                    <option value="Patrocinado">Patrocinado</option>
                 </select>
             </div>
         </div>
@@ -905,234 +956,7 @@
         <section class="pipeline-section">
             <h2 class="section-title">📊 Visão por Etapas (Pipeline)</h2>
             <div class="pipeline">
-                <!-- Avaliação -->
-                <div class="pipeline-column">
-                    <div class="column-header">
-                        <span class="column-title">📋 Avaliação</span>
-                        <span class="column-count">8</span>
-                    </div>
-                    <div class="patient-card status-ok" onclick="openPhaseModal('Pedro Souza', 'avaliacao')">
-                        <div class="patient-header">
-                            <span class="patient-name">Pedro Souza</span>
-                            <span class="patient-flow">Completo</span>
-                        </div>
-                        <div class="patient-meta">📱 (11) 99999-0001</div>
-                        <div class="patient-days">
-                            <span class="days-badge ok">3 dias nesta fase</span>
-                        </div>
-                        <div class="patient-actions">
-                            <button class="btn-small btn-advance"
-                                onclick="event.stopPropagation(); openPhaseModal('Pedro Souza', 'avaliacao')">Avançar
-                                ➡️</button>
-                            <button class="btn-small btn-view" onclick="event.stopPropagation()">Ver</button>
-                        </div>
-                    </div>
-                    <div class="patient-card status-ok" onclick="openPhaseModal('Lucia Mendes', 'avaliacao')">
-                        <div class="patient-header">
-                            <span class="patient-name">Lucia Mendes</span>
-                            <span class="patient-flow">Convênio</span>
-                        </div>
-                        <div class="patient-meta">📱 (11) 99999-0002</div>
-                        <div class="patient-days">
-                            <span class="days-badge ok">1 dia nesta fase</span>
-                        </div>
-                        <div class="patient-actions">
-                            <button class="btn-small btn-advance"
-                                onclick="event.stopPropagation(); openPhaseModal('Lucia Mendes', 'avaliacao')">Avançar
-                                ➡️</button>
-                            <button class="btn-small btn-view" onclick="event.stopPropagation()">Ver</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Exames -->
-                <div class="pipeline-column">
-                    <div class="column-header">
-                        <span class="column-title">🔬 Exames</span>
-                        <span class="column-count warning">12</span>
-                    </div>
-                    <div class="patient-card status-danger" onclick="openPhaseModal('Maria Santos', 'exames')">
-                        <div class="patient-header">
-                            <span class="patient-name">Maria Santos</span>
-                            <span class="patient-flow">Completo</span>
-                        </div>
-                        <div class="patient-meta">📱 (11) 99999-0003</div>
-                        <div class="patient-days">
-                            <span class="days-badge danger">🚨 22 dias nesta fase</span>
-                        </div>
-                        <div class="patient-actions">
-                            <button class="btn-small btn-advance"
-                                onclick="event.stopPropagation(); openPhaseModal('Maria Santos', 'exames')">Avançar
-                                ➡️</button>
-                            <button class="btn-small btn-view" onclick="event.stopPropagation()">Ver</button>
-                        </div>
-                    </div>
-                    <div class="patient-card status-warning" onclick="openPhaseModal('José Lima', 'exames')">
-                        <div class="patient-header">
-                            <span class="patient-name">José Lima</span>
-                            <span class="patient-flow">Judicial</span>
-                        </div>
-                        <div class="patient-meta">📱 (11) 99999-0004</div>
-                        <div class="patient-days">
-                            <span class="days-badge warning">⚠️ 12 dias nesta fase</span>
-                        </div>
-                        <div class="patient-actions">
-                            <button class="btn-small btn-advance"
-                                onclick="event.stopPropagation(); openPhaseModal('José Lima', 'exames')">Avançar
-                                ➡️</button>
-                            <button class="btn-small btn-view" onclick="event.stopPropagation()">Ver</button>
-                        </div>
-                    </div>
-                    <div class="patient-card status-ok" onclick="openPhaseModal('Fernanda Alves', 'exames')">
-                        <div class="patient-header">
-                            <span class="patient-name">Fernanda Alves</span>
-                            <span class="patient-flow">Direto</span>
-                        </div>
-                        <div class="patient-meta">📱 (11) 99999-0005</div>
-                        <div class="patient-days">
-                            <span class="days-badge ok">4 dias nesta fase</span>
-                        </div>
-                        <div class="patient-actions">
-                            <button class="btn-small btn-advance"
-                                onclick="event.stopPropagation(); openPhaseModal('Fernanda Alves', 'exames')">Avançar
-                                ➡️</button>
-                            <button class="btn-small btn-view" onclick="event.stopPropagation()">Ver</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Ortodontia -->
-                <div class="pipeline-column">
-                    <div class="column-header">
-                        <span class="column-title">🦷 Ortodontia</span>
-                        <span class="column-count">6</span>
-                    </div>
-                    <div class="patient-card status-ok" onclick="openPhaseModal('Roberto Dias', 'ortodontia')">
-                        <div class="patient-header">
-                            <span class="patient-name">Roberto Dias</span>
-                            <span class="patient-flow">Completo</span>
-                        </div>
-                        <div class="patient-meta">📱 (11) 99999-0006</div>
-                        <div class="patient-days">
-                            <span class="days-badge ok">5 dias nesta fase</span>
-                        </div>
-                        <div class="patient-actions">
-                            <button class="btn-small btn-advance"
-                                onclick="event.stopPropagation(); openPhaseModal('Roberto Dias', 'ortodontia')">Avançar
-                                ➡️</button>
-                            <button class="btn-small btn-view" onclick="event.stopPropagation()">Ver</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Pré-operatório -->
-                <div class="pipeline-column">
-                    <div class="column-header">
-                        <span class="column-title">📝 Pré-operatório</span>
-                        <span class="column-count danger">9</span>
-                    </div>
-                    <div class="patient-card status-danger" onclick="openPhaseModal('Carlos Oliveira', 'pre-op')">
-                        <div class="patient-header">
-                            <span class="patient-name">Carlos Oliveira</span>
-                            <span class="patient-flow">Convênio</span>
-                        </div>
-                        <div class="patient-meta">📱 (11) 99999-0007</div>
-                        <div class="patient-days">
-                            <span class="days-badge danger">🚨 18 dias nesta fase</span>
-                        </div>
-                        <div class="patient-actions">
-                            <button class="btn-small btn-advance"
-                                onclick="event.stopPropagation(); openPhaseModal('Carlos Oliveira', 'pre-op')">Avançar
-                                ➡️</button>
-                            <button class="btn-small btn-view" onclick="event.stopPropagation()">Ver</button>
-                        </div>
-                    </div>
-                    <div class="patient-card status-warning" onclick="openPhaseModal('Ana Costa', 'pre-op')">
-                        <div class="patient-header">
-                            <span class="patient-name">Ana Costa</span>
-                            <span class="patient-flow">Completo</span>
-                        </div>
-                        <div class="patient-meta">📱 (11) 99999-0008</div>
-                        <div class="patient-days">
-                            <span class="days-badge warning">⚠️ 10 dias nesta fase</span>
-                        </div>
-                        <div class="patient-actions">
-                            <button class="btn-small btn-advance"
-                                onclick="event.stopPropagation(); openPhaseModal('Ana Costa', 'pre-op')">Avançar
-                                ➡️</button>
-                            <button class="btn-small btn-view" onclick="event.stopPropagation()">Ver</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Cirurgia -->
-                <div class="pipeline-column">
-                    <div class="column-header">
-                        <span class="column-title">🏥 Cirurgia</span>
-                        <span class="column-count">4</span>
-                    </div>
-                    <div class="patient-card status-ok" onclick="openPhaseModal('Marcos Pereira', 'cirurgia')">
-                        <div class="patient-header">
-                            <span class="patient-name">Marcos Pereira</span>
-                            <span class="patient-flow">Completo</span>
-                        </div>
-                        <div class="patient-meta">📱 (11) 99999-0009</div>
-                        <div class="patient-days">
-                            <span class="days-badge ok">Cirurgia: 15/02</span>
-                        </div>
-                        <div class="patient-actions">
-                            <button class="btn-small btn-advance"
-                                onclick="event.stopPropagation(); openPhaseModal('Marcos Pereira', 'cirurgia')">Avançar
-                                ➡️</button>
-                            <button class="btn-small btn-view" onclick="event.stopPropagation()">Ver</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Pós-operatório -->
-                <div class="pipeline-column">
-                    <div class="column-header">
-                        <span class="column-title">🩹 Pós-operatório</span>
-                        <span class="column-count">5</span>
-                    </div>
-                    <div class="patient-card status-ok" onclick="openPhaseModal('Julia Santos', 'pos-op')">
-                        <div class="patient-header">
-                            <span class="patient-name">Julia Santos</span>
-                            <span class="patient-flow">Direto</span>
-                        </div>
-                        <div class="patient-meta">📱 (11) 99999-0010</div>
-                        <div class="patient-days">
-                            <span class="days-badge ok">Dia 7 pós-op</span>
-                        </div>
-                        <div class="patient-actions">
-                            <button class="btn-small btn-advance"
-                                onclick="event.stopPropagation(); openPhaseModal('Julia Santos', 'pos-op')">Avançar
-                                ➡️</button>
-                            <button class="btn-small btn-view" onclick="event.stopPropagation()">Ver</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Conclusão -->
-                <div class="pipeline-column">
-                    <div class="column-header">
-                        <span class="column-title">✅ Conclusão</span>
-                        <span class="column-count">3</span>
-                    </div>
-                    <div class="patient-card status-ok" onclick="openPhaseModal('Ricardo Nunes', 'conclusao')">
-                        <div class="patient-header">
-                            <span class="patient-name">Ricardo Nunes</span>
-                            <span class="patient-flow">Completo</span>
-                        </div>
-                        <div class="patient-meta">📱 (11) 99999-0011</div>
-                        <div class="patient-days">
-                            <span class="days-badge ok">Alta em 10/01</span>
-                        </div>
-                        <div class="patient-actions">
-                            <button class="btn-small btn-view" onclick="event.stopPropagation()">Ver Histórico</button>
-                        </div>
-                    </div>
-                </div>
+                <!-- Rendered dynamically by JavaScript -->
             </div>
         </section>
     </main>
@@ -1297,69 +1121,313 @@
     </div>
 
     <script>
-        // Sample documents per phase
-        const phaseDocuments = {
-            avaliacao: [
-                '📄 Ficha de Anamnese',
-                '📄 Termo de Consentimento Inicial',
-                '📄 Guia de Preparo para Exames'
-            ],
-            exames: [
-                '📄 Lista de Exames Necessários',
-                '📄 Orientações para Exames Laboratoriais',
-                '📄 Solicitação de Exames de Imagem'
-            ],
-            ortodontia: [
-                '📄 Guia de Cuidados com Aparelho',
-                '📄 Cronograma de Consultas Ortodônticas',
-                '📄 Orientações Alimentares'
-            ],
-            preop: [
-                '📄 Orientações Pré-Operatórias',
-                '📄 Lista de Medicamentos a Suspender',
-                '📄 Checklist de Preparação',
-                '📄 Termo de Consentimento Cirúrgico'
-            ],
-            cirurgia: [
-                '📄 Orientações do Dia da Cirurgia',
-                '📄 Contatos de Emergência',
-                '📄 Informações sobre Internação'
-            ],
-            posop: [
-                '📄 Guia de Cuidados Pós-Operatórios',
-                '📄 Receituário e Medicações',
-                '📄 Dieta Líquida/Pastosa',
-                '📄 Sinais de Alerta',
-                '📄 Cronograma de Retornos'
-            ],
-            conclusao: [
-                '📄 Relatório Final do Tratamento',
-                '📄 Orientações de Manutenção',
-                '📄 Fotos Antes/Depois (se autorizado)'
-            ]
+        // ========================================
+        // MOCK DATA - 47 Pacientes
+        // ========================================
+        const mockPatients = [
+            // Avaliação (8 pacientes)
+            { id: 1, name: 'Pedro Souza', phone: '(11) 99999-0001', flow: 'Completo', phase: 'avaliacao', days: 3, status: 'ok', opme: 'Art Fix' },
+            { id: 2, name: 'Lucia Mendes', phone: '(11) 99999-0002', flow: 'Convênio', phase: 'avaliacao', days: 1, status: 'ok', opme: 'Evolve' },
+            { id: 3, name: 'Gabriel Torres', phone: '(11) 99999-0013', flow: 'Direto', phase: 'avaliacao', days: 5, status: 'ok', opme: 'CPMH' },
+            { id: 4, name: 'Patrícia Lima', phone: '(11) 99999-0014', flow: 'Judicial', phase: 'avaliacao', days: 2, status: 'ok', opme: 'Art Fix' },
+            { id: 5, name: 'Henrique Castro', phone: '(11) 99999-0015', flow: 'Completo', phase: 'avaliacao', days: 4, status: 'ok', opme: 'Evolve' },
+            { id: 6, name: 'Bianca Rocha', phone: '(11) 99999-0016', flow: 'Convênio', phase: 'avaliacao', days: 6, status: 'ok', opme: 'Patrocinado' },
+            { id: 7, name: 'Thiago Martins', phone: '(11) 99999-0017', flow: 'Direto', phase: 'avaliacao', days: 8, status: 'warning', opme: 'CPMH' },
+            { id: 8, name: 'Amanda Souza', phone: '(11) 99999-0018', flow: 'Completo', phase: 'avaliacao', days: 2, status: 'ok', opme: 'Art Fix' },
+
+            // Exames (12 pacientes)
+            { id: 9, name: 'Maria Santos', phone: '(11) 99999-0003', flow: 'Completo', phase: 'exames', days: 22, status: 'danger', opme: 'Evolve' },
+            { id: 10, name: 'José Lima', phone: '(11) 99999-0004', flow: 'Judicial', phase: 'exames', days: 12, status: 'warning', opme: 'Art Fix' },
+            { id: 11, name: 'Fernanda Alves', phone: '(11) 99999-0005', flow: 'Direto', phase: 'exames', days: 4, status: 'ok', opme: 'CPMH' },
+            { id: 12, name: 'Rodrigo Pinto', phone: '(11) 99999-0019', flow: 'Completo', phase: 'exames', days: 9, status: 'warning', opme: 'Evolve' },
+            { id: 13, name: 'Camila Nunes', phone: '(11) 99999-0020', flow: 'Convênio', phase: 'exames', days: 16, status: 'danger', opme: 'Patrocinado' },
+            { id: 14, name: 'Felipe Barros', phone: '(11) 99999-0021', flow: 'Direto', phase: 'exames', days: 3, status: 'ok', opme: 'Art Fix' },
+            { id: 15, name: 'Larissa Costa', phone: '(11) 99999-0022', flow: 'Judicial', phase: 'exames', days: 7, status: 'ok', opme: 'CPMH' },
+            { id: 16, name: 'Bruno Silva', phone: '(11) 99999-0023', flow: 'Completo', phase: 'exames', days: 5, status: 'ok', opme: 'Evolve' },
+            { id: 17, name: 'Juliana Ramos', phone: '(11) 99999-0024', flow: 'Convênio', phase: 'exames', days: 11, status: 'warning', opme: 'Art Fix' },
+            { id: 18, name: 'Diego Ferreira', phone: '(11) 99999-0025', flow: 'Direto', phase: 'exames', days: 2, status: 'ok', opme: 'Patrocinado' },
+            { id: 19, name: 'Renata Gomes', phone: '(11) 99999-0026', flow: 'Completo', phase: 'exames', days: 6, status: 'ok', opme: 'CPMH' },
+            { id: 20, name: 'Marcelo Dias', phone: '(11) 99999-0027', flow: 'Judicial', phase: 'exames', days: 14, status: 'warning', opme: 'Evolve' },
+
+            // Ortodontia (6 pacientes)
+            { id: 21, name: 'Roberto Dias', phone: '(11) 99999-0006', flow: 'Completo', phase: 'ortodontia', days: 5, status: 'ok', opme: 'Art Fix' },
+            { id: 22, name: 'Carolina Melo', phone: '(11) 99999-0028', flow: 'Completo', phase: 'ortodontia', days: 10, status: 'warning', opme: 'Evolve' },
+            { id: 23, name: 'André Santos', phone: '(11) 99999-0029', flow: 'Convênio', phase: 'ortodontia', days: 3, status: 'ok', opme: 'CPMH' },
+            { id: 24, name: 'Vanessa Lima', phone: '(11) 99999-0030', flow: 'Completo', phase: 'ortodontia', days: 18, status: 'danger', opme: 'Art Fix' },
+            { id: 25, name: 'Ricardo Costa', phone: '(11) 99999-0031', flow: 'Judicial', phase: 'ortodontia', days: 7, status: 'ok', opme: 'Patrocinado' },
+            { id: 26, name: 'Aline Pereira', phone: '(11) 99999-0032', flow: 'Completo', phase: 'ortodontia', days: 4, status: 'ok', opme: 'Evolve' },
+
+            // Pré-operatório (9 pacientes)
+            { id: 27, name: 'Carlos Oliveira', phone: '(11) 99999-0007', flow: 'Convênio', phase: 'preop', days: 18, status: 'danger', opme: 'CPMH' },
+            { id: 28, name: 'Ana Costa', phone: '(11) 99999-0008', flow: 'Completo', phase: 'preop', days: 10, status: 'warning', opme: 'Art Fix' },
+            { id: 29, name: 'Lucas Ribeiro', phone: '(11) 99999-0033', flow: 'Direto', phase: 'preop', days: 5, status: 'ok', opme: 'Evolve' },
+            { id: 30, name: 'Marina Torres', phone: '(11) 99999-0034', flow: 'Judicial', phase: 'preop', days: 16, status: 'danger', opme: 'Patrocinado' },
+            { id: 31, name: 'Paulo Henrique', phone: '(11) 99999-0035', flow: 'Completo', phase: 'preop', days: 8, status: 'warning', opme: 'CPMH' },
+            { id: 32, name: 'Natalia Souza', phone: '(11) 99999-0036', flow: 'Convênio', phase: 'preop', days: 3, status: 'ok', opme: 'Art Fix' },
+            { id: 33, name: 'Eduardo Lima', phone: '(11) 99999-0037', flow: 'Direto', phase: 'preop', days: 6, status: 'ok', opme: 'Evolve' },
+            { id: 34, name: 'Isabela Martins', phone: '(11) 99999-0038', flow: 'Completo', phase: 'preop', days: 12, status: 'warning', opme: 'CPMH' },
+            { id: 35, name: 'Gustavo Alves', phone: '(11) 99999-0039', flow: 'Judicial', phase: 'preop', days: 4, status: 'ok', opme: 'Patrocinado' },
+
+            // Cirurgia (4 pacientes)
+            { id: 36, name: 'Marcos Pereira', phone: '(11) 99999-0009', flow: 'Completo', phase: 'cirurgia', days: 0, status: 'ok', opme: 'Art Fix', surgeryDate: '15/02' },
+            { id: 37, name: 'Fernanda Rocha', phone: '(11) 99999-0040', flow: 'Direto', phase: 'cirurgia', days: 0, status: 'ok', opme: 'Evolve', surgeryDate: '18/02' },
+            { id: 38, name: 'Rafael Gomes', phone: '(11) 99999-0041', flow: 'Convênio', phase: 'cirurgia', days: 0, status: 'ok', opme: 'CPMH', surgeryDate: '20/02' },
+            { id: 39, name: 'Tatiana Nunes', phone: '(11) 99999-0042', flow: 'Completo', phase: 'cirurgia', days: 0, status: 'ok', opme: 'Patrocinado', surgeryDate: '22/02' },
+
+            // Pós-operatório (5 pacientes)
+            { id: 40, name: 'Julia Santos', phone: '(11) 99999-0010', flow: 'Direto', phase: 'posop', days: 7, status: 'ok', opme: 'Art Fix' },
+            { id: 41, name: 'Leonardo Pinto', phone: '(11) 99999-0043', flow: 'Completo', phase: 'posop', days: 14, status: 'ok', opme: 'Evolve' },
+            { id: 42, name: 'Priscila Barros', phone: '(11) 99999-0044', flow: 'Convênio', phase: 'posop', days: 21, status: 'ok', opme: 'CPMH' },
+            { id: 43, name: 'Vinícius Costa', phone: '(11) 99999-0045', flow: 'Judicial', phase: 'posop', days: 5, status: 'ok', opme: 'Patrocinado' },
+            { id: 44, name: 'Daniela Lima', phone: '(11) 99999-0046', flow: 'Direto', phase: 'posop', days: 10, status: 'ok', opme: 'Art Fix' },
+
+            // Conclusão (3 pacientes)
+            { id: 45, name: 'Ricardo Nunes', phone: '(11) 99999-0011', flow: 'Completo', phase: 'conclusao', days: 0, status: 'ok', opme: 'Evolve', altaDate: '10/01' },
+            { id: 46, name: 'Amanda Ferreira', phone: '(11) 99999-0047', flow: 'Direto', phase: 'conclusao', days: 0, status: 'ok', opme: 'CPMH', altaDate: '05/01' },
+            { id: 47, name: 'Thiago Oliveira', phone: '(11) 99999-0048', flow: 'Convênio', phase: 'conclusao', days: 0, status: 'ok', opme: 'Art Fix', altaDate: '12/01' }
+        ];
+
+        const phaseNames = {
+            'avaliacao': { name: 'Avaliação', icon: '📋' },
+            'exames': { name: 'Exames', icon: '🔬' },
+            'ortodontia': { name: 'Ortodontia', icon: '🦷' },
+            'preop': { name: 'Pré-operatório', icon: '📝' },
+            'cirurgia': { name: 'Cirurgia', icon: '🏥' },
+            'posop': { name: 'Pós-operatório', icon: '🩹' },
+            'conclusao': { name: 'Conclusão', icon: '✅' }
         };
 
-        let selectedPhase = null;
+        const phaseDocuments = {
+            avaliacao: ['📄 Ficha de Anamnese', '📄 Termo de Consentimento Inicial', '📄 Guia de Preparo para Exames'],
+            exames: ['📄 Lista de Exames Necessários', '📄 Orientações para Exames Laboratoriais', '📄 Solicitação de Exames de Imagem'],
+            ortodontia: ['📄 Guia de Cuidados com Aparelho', '📄 Cronograma de Consultas Ortodônticas', '📄 Orientações Alimentares'],
+            preop: ['📄 Orientações Pré-Operatórias', '📄 Lista de Medicamentos a Suspender', '📄 Checklist de Preparação', '📄 Termo de Consentimento Cirúrgico'],
+            cirurgia: ['📄 Orientações do Dia da Cirurgia', '📄 Contatos de Emergência', '📄 Informações sobre Internação'],
+            posop: ['📄 Guia de Cuidados Pós-Operatórios', '📄 Receituário e Medicações', '📄 Dieta Líquida/Pastosa', '📄 Sinais de Alerta', '📄 Cronograma de Retornos'],
+            conclusao: ['📄 Relatório Final do Tratamento', '📄 Orientações de Manutenção', '📄 Fotos Antes/Depois (se autorizado)']
+        };
 
+        let patients = [...mockPatients];
+        let selectedPhase = null;
+        let currentPatient = null;
+        let draggedCard = null;
+
+        // ========================================
+        // INIT - Render Pipeline
+        // ========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            renderPipeline();
+            updateStats();
+            setupDragAndDrop();
+        });
+
+        function renderPipeline() {
+            const phases = ['avaliacao', 'exames', 'ortodontia', 'preop', 'cirurgia', 'posop', 'conclusao'];
+            const pipeline = document.querySelector('.pipeline');
+
+            // Get current filter values
+            const searchTerm = document.getElementById('searchInput')?.value?.toLowerCase() || '';
+            const flowFilter = document.getElementById('filterFlow')?.value || '';
+            const statusFilter = document.getElementById('filterStatus')?.value || '';
+            const opmeFilter = document.getElementById('filterOPME')?.value || '';
+
+            // Filter patients
+            const filteredPatients = patients.filter(p => {
+                const matchesSearch = p.name.toLowerCase().includes(searchTerm) || p.phone.includes(searchTerm);
+                const matchesFlow = !flowFilter || p.flow === flowFilter;
+                const matchesStatus = !statusFilter || p.status === statusFilter;
+                const matchesOPME = !opmeFilter || p.opme === opmeFilter;
+                return matchesSearch && matchesFlow && matchesStatus && matchesOPME;
+            });
+
+            pipeline.innerHTML = phases.map(phase => {
+                const phasePatients = filteredPatients.filter(p => p.phase === phase);
+                const countClass = phasePatients.some(p => p.status === 'danger') ? 'danger' :
+                    phasePatients.some(p => p.status === 'warning') ? 'warning' : '';
+
+                return `
+                    <div class="pipeline-column" data-phase="${phase}">
+                        <div class="column-header">
+                            <span class="column-title">${phaseNames[phase].icon} ${phaseNames[phase].name}</span>
+                            <span class="column-count ${countClass}">${phasePatients.length}</span>
+                        </div>
+                        <div class="column-content" data-phase="${phase}">
+                            ${phasePatients.map(p => renderPatientCard(p)).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            setupDragAndDrop();
+        }
+
+        function renderPatientCard(patient) {
+            let daysText = '';
+            if (patient.phase === 'cirurgia' && patient.surgeryDate) {
+                daysText = `Cirurgia: ${patient.surgeryDate}`;
+            } else if (patient.phase === 'conclusao' && patient.altaDate) {
+                daysText = `Alta em ${patient.altaDate}`;
+            } else if (patient.phase === 'posop') {
+                daysText = `Dia ${patient.days} pós-op`;
+            } else {
+                const statusIcon = patient.status === 'danger' ? '🚨 ' : patient.status === 'warning' ? '⚠️ ' : '';
+                daysText = `${statusIcon}${patient.days} dias nesta fase`;
+            }
+
+            const showAdvance = patient.phase !== 'conclusao';
+
+            return `
+                <div class="patient-card status-${patient.status}" 
+                     draggable="true" 
+                     data-patient-id="${patient.id}"
+                     onclick="openPhaseModal(${patient.id})">
+                    <div class="patient-header">
+                        <span class="patient-name">${patient.name}</span>
+                        <span class="patient-flow">${patient.flow}</span>
+                    </div>
+                    <div class="patient-meta">📱 ${patient.phone}</div>
+                    <div class="patient-days">
+                        <span class="days-badge ${patient.status}">${daysText}</span>
+                    </div>
+                    <div class="patient-actions">
+                        ${showAdvance ? `<button class="btn-small btn-advance" onclick="event.stopPropagation(); advancePhase(${patient.id})">Avançar ➡️</button>` : ''}
+                        <button class="btn-small btn-view" onclick="event.stopPropagation(); viewPatient(${patient.id})">Ver</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ========================================
+        // DRAG AND DROP
+        // ========================================
+        function setupDragAndDrop() {
+            const cards = document.querySelectorAll('.patient-card');
+            const columns = document.querySelectorAll('.column-content');
+
+            cards.forEach(card => {
+                card.addEventListener('dragstart', handleDragStart);
+                card.addEventListener('dragend', handleDragEnd);
+            });
+
+            columns.forEach(column => {
+                column.addEventListener('dragover', handleDragOver);
+                column.addEventListener('dragleave', handleDragLeave);
+                column.addEventListener('drop', handleDrop);
+            });
+        }
+
+        function handleDragStart(e) {
+            draggedCard = e.target;
+            e.target.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', e.target.dataset.patientId);
+        }
+
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+            document.querySelectorAll('.pipeline-column').forEach(col => col.classList.remove('drag-over'));
+            draggedCard = null;
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            e.currentTarget.closest('.pipeline-column').classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            e.currentTarget.closest('.pipeline-column').classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            const column = e.currentTarget.closest('.pipeline-column');
+            column.classList.remove('drag-over');
+
+            const patientId = parseInt(e.dataTransfer.getData('text/plain'));
+            const newPhase = e.currentTarget.dataset.phase;
+
+            const patient = patients.find(p => p.id === patientId);
+            if (patient && patient.phase !== newPhase) {
+                const oldPhase = patient.phase;
+                patient.phase = newPhase;
+                patient.days = 0;
+                patient.status = 'ok';
+
+                renderPipeline();
+                updateStats();
+
+                const docs = phaseDocuments[newPhase] || [];
+                showToast(`${patient.name} movido para ${phaseNames[newPhase].name}. ${docs.length} documentos enviados!`);
+            }
+        }
+
+        // ========================================
+        // FILTERS
+        // ========================================
+        function filterPatients() {
+            renderPipeline();
+            updateStats();
+        }
+
+        function filterByStatus(status) {
+            const statusSelect = document.getElementById('filterStatus');
+            if (status === 'all') {
+                statusSelect.value = '';
+            } else {
+                statusSelect.value = status;
+            }
+            filterPatients();
+        }
+
+        // ========================================
+        // STATS
+        // ========================================
+        function updateStats() {
+            const total = patients.length;
+            const ok = patients.filter(p => p.status === 'ok').length;
+            const warning = patients.filter(p => p.status === 'warning').length;
+            const danger = patients.filter(p => p.status === 'danger').length;
+
+            const statCards = document.querySelectorAll('.stat-card .stat-info h3');
+            if (statCards.length >= 4) {
+                statCards[0].textContent = total;
+                statCards[1].textContent = ok;
+                statCards[2].textContent = warning;
+                statCards[3].textContent = danger;
+            }
+        }
+
+        // ========================================
+        // MODALS
+        // ========================================
         function openNewPatientModal() {
             document.getElementById('newPatientModal').classList.add('active');
         }
 
-        function openPhaseModal(patientName, currentPhase) {
-            document.getElementById('modalPatientName').textContent = patientName;
-            document.getElementById('modalCurrentPhase').textContent = formatPhaseName(currentPhase);
+        function openPhaseModal(patientId) {
+            currentPatient = patients.find(p => p.id === patientId);
+            if (!currentPatient) return;
+
+            document.getElementById('modalPatientName').textContent = currentPatient.name;
+            document.getElementById('modalCurrentPhase').textContent = phaseNames[currentPatient.phase].name;
             document.getElementById('phaseModal').classList.add('active');
             document.getElementById('documentsPreview').style.display = 'none';
             selectedPhase = null;
 
-            // Reset phase selection
+            // Reset and mark current phase
             document.querySelectorAll('.phase-item').forEach(item => {
-                item.classList.remove('selected');
+                item.classList.remove('selected', 'current');
+                if (item.dataset.phase === currentPatient.phase) {
+                    item.classList.add('current');
+                }
             });
         }
 
         function closeModal(modalId) {
             document.getElementById(modalId).classList.remove('active');
+            currentPatient = null;
+            selectedPhase = null;
         }
 
         function selectFlow(element) {
@@ -1370,54 +1438,107 @@
         function selectPhase(element, phase) {
             if (element.classList.contains('current')) return;
 
-            document.querySelectorAll('.phase-item').forEach(item => {
-                item.classList.remove('selected');
-            });
+            document.querySelectorAll('.phase-item').forEach(item => item.classList.remove('selected'));
             element.classList.add('selected');
             selectedPhase = phase;
 
-            // Show documents preview
             const preview = document.getElementById('documentsPreview');
             const list = document.getElementById('documentsList');
 
             if (phaseDocuments[phase]) {
-                list.innerHTML = phaseDocuments[phase].map(doc =>
-                    `<div class="document-item">${doc}</div>`
-                ).join('');
+                list.innerHTML = phaseDocuments[phase].map(doc => `<div class="document-item">${doc}</div>`).join('');
                 preview.style.display = 'block';
             }
         }
 
-        function formatPhaseName(phase) {
-            const names = {
-                'avaliacao': 'Avaliação',
-                'exames': 'Exames',
-                'ortodontia': 'Ortodontia',
-                'pre-op': 'Pré-operatório',
-                'preop': 'Pré-operatório',
-                'cirurgia': 'Cirurgia',
-                'pos-op': 'Pós-operatório',
-                'posop': 'Pós-operatório',
-                'conclusao': 'Conclusão'
-            };
-            return names[phase] || phase;
-        }
-
         function confirmPhaseChange() {
-            if (!selectedPhase) {
+            if (!selectedPhase || !currentPatient) {
                 alert('Por favor, selecione uma nova fase.');
                 return;
             }
 
+            currentPatient.phase = selectedPhase;
+            currentPatient.days = 0;
+            currentPatient.status = 'ok';
+
             closeModal('phaseModal');
-            showToast('Fase alterada com sucesso! Documentos enviados ao paciente.');
+            renderPipeline();
+            updateStats();
+
+            const docs = phaseDocuments[selectedPhase] || [];
+            showToast(`Fase alterada para ${phaseNames[selectedPhase].name}! ${docs.length} documentos enviados.`);
         }
 
         function savePatient() {
+            const nameInput = document.querySelector('#newPatientModal input[type="text"]');
+            const phoneInput = document.querySelector('#newPatientModal input[type="tel"]');
+            const flowOption = document.querySelector('.flow-option.selected h4');
+            const opmeSelect = document.querySelector('#newPatientModal select');
+
+            const name = nameInput?.value || 'Novo Paciente';
+            const phone = phoneInput?.value || '(11) 99999-9999';
+            const flowText = flowOption?.textContent || 'Completo';
+            const flow = flowText.includes('Completo') ? 'Completo' :
+                flowText.includes('Direto') ? 'Direto' :
+                    flowText.includes('Convênio') ? 'Convênio' : 'Judicial';
+            const opme = opmeSelect?.value || 'Art Fix';
+
+            const newPatient = {
+                id: patients.length + 1,
+                name: name,
+                phone: phone,
+                flow: flow,
+                phase: 'avaliacao',
+                days: 0,
+                status: 'ok',
+                opme: opme
+            };
+
+            patients.push(newPatient);
             closeModal('newPatientModal');
-            showToast('Paciente cadastrado com sucesso!');
+            renderPipeline();
+            updateStats();
+            showToast(`Paciente ${name} cadastrado com sucesso!`);
+
+            // Clear form
+            if (nameInput) nameInput.value = '';
+            if (phoneInput) phoneInput.value = '';
         }
 
+        function advancePhase(patientId) {
+            const patient = patients.find(p => p.id === patientId);
+            if (!patient) return;
+
+            const phases = ['avaliacao', 'exames', 'ortodontia', 'preop', 'cirurgia', 'posop', 'conclusao'];
+            const currentIndex = phases.indexOf(patient.phase);
+
+            if (currentIndex < phases.length - 1) {
+                const newPhase = phases[currentIndex + 1];
+                patient.phase = newPhase;
+                patient.days = 0;
+                patient.status = 'ok';
+
+                renderPipeline();
+                updateStats();
+
+                const docs = phaseDocuments[newPhase] || [];
+                showToast(`${patient.name} avançou para ${phaseNames[newPhase].name}! ${docs.length} documentos enviados.`);
+            }
+        }
+
+        function viewPatient(patientId) {
+            // Store patient ID for detail page
+            localStorage.setItem('selectedPatientId', patientId);
+            window.location.href = 'paciente.html';
+        }
+
+        function openPatientModal(patientId) {
+            viewPatient(patientId);
+        }
+
+        // ========================================
+        // UTILITIES
+        // ========================================
         function showToast(message) {
             const toast = document.getElementById('toast');
             const toastMessage = document.getElementById('toastMessage');
@@ -1429,15 +1550,16 @@
             }, 3000);
         }
 
-        function filterByStatus(status) {
-            // This would filter the pipeline view
-            showToast(`Filtro aplicado: ${status === 'all' ? 'Todos os pacientes' : status}`);
-        }
-
-        function openPatientModal(patientId) {
-            // This would open the patient detail modal
-            // For demo, just show a toast
-            showToast('Abrindo detalhes do paciente...');
+        function exportData() {
+            const data = JSON.stringify(patients, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'bucomax-pacientes.json';
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Dados exportados com sucesso!');
         }
 
         // Close modal when clicking outside
@@ -1447,6 +1569,12 @@
                     modal.classList.remove('active');
                 }
             });
+        });
+
+        // Add data-phase to phase items in modal
+        document.querySelectorAll('.phase-item').forEach((item, index) => {
+            const phases = ['avaliacao', 'exames', 'ortodontia', 'preop', 'cirurgia', 'posop', 'conclusao'];
+            item.dataset.phase = phases[index];
         });
     </script>
 </body>
